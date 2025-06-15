@@ -153,12 +153,6 @@
 				</thead>
 				<tbody>
 					<!--Marked days go here -->
-					<tr>
-						<td>2025-06-26</td>
-					</tr>
-					<tr>
-						<td>2025-06-30</td>
-					</tr>
 				</tbody>
 			</table>
 		</div>
@@ -170,6 +164,7 @@
 		const calendarBody = document.getElementById('calendarBody');
 		const prevBtn = document.getElementById('prev');
 		const nextBtn = document.getElementById('next');
+		const markedDays = document.querySelector('#marked-days table tbody');
 		let currentDate = new Date();
 
 		function renderCalendar(date) {
@@ -211,12 +206,60 @@
 				cell.id = String(year) + "-" + String((month + 1)) + "-" + String(day);
 				cell.style.border = "3px solid white";
 				cell.addEventListener('click', () => {
+					// Check if it's already been marked
 					if (cell.classList.contains("marked")) {
+						console.log("marked-" + cell.id);
+						document.getElementById("marked-" + cell.id).remove();
 						cell.classList.remove("marked");
-					} else {
-						cell.classList.add("marked");
+					} 
+					// Mark the date if it hasn't been marked yet
+					else {
+						// Check if the particular date has already been marked and add the appropriate mark if it has
+						let exist = false;
+
+						for (let i = 0; i < markedDays.children.length; i++) {
+							const row = markedDays.children[i];
+							
+							if (row.id === ("marked-" + cell.id)) {
+								exist = true;
+								cell.classList.add("marked");
+								break; // Exit loop early once found
+							}
+						}
+
+						// The date has not been marked and/or the list is empty
+						if (!exist || (markedDays.children.length === 0)) {							
+							// Create new row and cell to add to the list of marked days
+							const newRow = document.createElement('tr');
+							// Add the cell ID to the tr for easy identification
+							newRow.id = "marked-" + cell.id;
+							const markedDay = document.createElement('td');
+							// Add the ID of the date selected as the content of the cell
+							markedDay.textContent = cell.id;
+							newRow.appendChild(markedDay);
+							// Insert at TOP of markedDays
+							if (markedDays.firstChild) {
+								markedDays.insertBefore(newRow, markedDays.firstChild);
+							} else {
+								markedDays.appendChild(newRow); // If empty
+							}
+							cell.classList.add("marked");
+						}
 					}
 				})
+
+				// Check if the particular date has already been marked and add the appropriate mark if it has
+				let exist = false;
+				for (let i = 0; i < markedDays.children.length; i++) {
+					const row = markedDays.children[i];
+					
+					if (row.id === ("marked-" + cell.id)) {
+						exist = true;
+						cell.classList.add("marked");
+						break; // Exit loop early once found
+					}
+				}
+				
 				// Highlight today
 				const today = new Date();
 				if (
