@@ -138,8 +138,8 @@
 						<th>Sat</th>
 					</tr>
 				</thead>
-				<tbody id="calendarBody">
-					<!-- Dates will be generated here -->
+				<tbody id="calendarBody"><!-- Dates will be generated here -->
+					
 				</tbody>
 			</table>
 		</div>
@@ -151,8 +151,8 @@
 						<th>Marked Days</th>
 					</tr>
 				</thead>
-				<tbody>
-					<!--Marked days go here -->
+				<tbody><!--Marked days go here -->
+
 				</tbody>
 			</table>
 		</div>
@@ -167,7 +167,57 @@
 		const markedDays = document.querySelector('#marked-days table tbody');
 		let currentDate = new Date();
 
+		// A function to be called every time a date is marked
+		function markDate(date, action) {
+			const msg = {"status": "success", 
+			"action": action,
+			"content": date};		
+			
+			const xmlhttp = new XMLHttpRequest();
+			xmlhttp.open("POST", "server.php");
+			xmlhttp.setRequestHeader("Content-type", "application/json");
+			xmlhttp.send(JSON.stringify(msg));
+		}
+
+		function renderMarkedDays() {
+			const xmlhttp = new XMLHttpRequest();
+			const markedDates = [];
+			xmlhttp.onload = function() {
+				const calendarBody = document.querySelector("#calendarBody");
+				const jsonResponse = JSON.parse(this.responseText);				
+				
+				const lines = jsonResponse['content'].split(/\r\n?|\n/);
+				
+				if (!(lines.length == 1 && lines[0] == '')) {
+					lines.forEach((line, index) => {
+						if (line != "") {							
+							const row = document.createElement('tr');
+							row.id = "marked-" + line;
+							
+							const cell = document.createElement('td');
+							cell.textContent = line;
+		
+							row.appendChild(cell);
+							markedDays.appendChild(row);
+
+							// Mark the date that is listed
+							document.getElementById(line).classList.add("marked");
+							
+						}
+					});
+				}
+			}
+			xmlhttp.open("GET", "server.php");
+			xmlhttp.send();
+			console.log("markedDates: ", markedDates);
+			
+			return markedDates;
+		}
+		
 		function renderCalendar(date) {
+			const markedDates = renderMarkedDays();
+			console.log(typeof markedDates, markedDates);
+			
 			const year = date.getFullYear();
 			const month = date.getMonth();
 			// Set the month and year title
@@ -208,24 +258,15 @@
 				cell.addEventListener('click', () => {
 					// Check if it's already been marked
 					if (cell.classList.contains("marked")) {
-						console.log("marked-" + cell.id);
 						document.getElementById("marked-" + cell.id).remove();
 						cell.classList.remove("marked");
+						markDate(cell.id, "unmark");
+						
 					} 
 					// Mark the date if it hasn't been marked yet
 					else {
 						// Check if the particular date has already been marked and add the appropriate mark if it has
 						let exist = false;
-
-						for (let i = 0; i < markedDays.children.length; i++) {
-							const row = markedDays.children[i];
-							
-							if (row.id === ("marked-" + cell.id)) {
-								exist = true;
-								cell.classList.add("marked");
-								break; // Exit loop early once found
-							}
-						}
 
 						// The date has not been marked and/or the list is empty
 						if (!exist || (markedDays.children.length === 0)) {							
@@ -244,21 +285,11 @@
 								markedDays.appendChild(newRow); // If empty
 							}
 							cell.classList.add("marked");
+							markDate(cell.id, "mark");
+							
 						}
 					}
 				})
-
-				// Check if the particular date has already been marked and add the appropriate mark if it has
-				let exist = false;
-				for (let i = 0; i < markedDays.children.length; i++) {
-					const row = markedDays.children[i];
-					
-					if (row.id === ("marked-" + cell.id)) {
-						exist = true;
-						cell.classList.add("marked");
-						break; // Exit loop early once found
-					}
-				}
 				
 				// Highlight today
 				const today = new Date();
@@ -280,7 +311,9 @@
 				row.appendChild(cell);
 			}
 			calendarBody.appendChild(row);
+
 		}
+
 		prevBtn.addEventListener('click', () => {
 			currentDate.setMonth(currentDate.getMonth() - 1);
 			renderCalendar(currentDate);
@@ -289,8 +322,11 @@
 			currentDate.setMonth(currentDate.getMonth() + 1);
 			renderCalendar(currentDate);
 		});
-		// Initial render
+		
+		// Initial render of calendar
 		renderCalendar(currentDate);
+		console.log("test");
+		
 	</script>
 </body>
 
